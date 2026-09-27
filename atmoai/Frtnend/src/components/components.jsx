@@ -287,14 +287,18 @@ const NotificationBell = ({ open, setOpen, onGoToOverview }) => (
     </div>
 );
 
-const LocateButton = ({ onLocateMe, compact = false }) => (
-    <button className={`locate-button ${compact ? "compact" : ""}`} onClick={onLocateMe}>
-        <IconLocate size={16} />
-        <span>Locate Me</span>
+const LocateButton = ({ onLocateMe, compact = false, locating = false }) => (
+    <button
+        className={`locate-button ${compact ? "compact" : ""}`}
+        onClick={onLocateMe}
+        disabled={locating}
+    >
+        <IconLocate size={15} />
+        <span>{locating ? "Locating..." : "Locate Me"}</span>
     </button>
 );
 
-const LandingPage = ({ setView, onLocateMe, notificationOpen, setNotificationOpen }) => {
+const LandingPage = ({ setView, onLocateMe, locating, notificationOpen, setNotificationOpen }) => {
     const featureCards = [
         {
             title: "Map Experience",
@@ -348,7 +352,7 @@ const LandingPage = ({ setView, onLocateMe, notificationOpen, setNotificationOpe
                         setOpen={setNotificationOpen}
                         onGoToOverview={() => setView("overview")}
                     />
-                    <LocateButton onLocateMe={onLocateMe} />
+                    <LocateButton onLocateMe={onLocateMe} locating={locating} />
                 </div>
             </section>
 
@@ -388,7 +392,7 @@ const LandingPage = ({ setView, onLocateMe, notificationOpen, setNotificationOpe
     );
 };
 
-const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, notificationOpen, setNotificationOpen, onGoToOverview }) => {
+const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, notificationOpen, setNotificationOpen, onGoToOverview }) => {
     const [input, setInput] = useState("");
     const chatEndRef = useRef(null);
     const placeholder = useTypewriter(TYPEWRITER_PHRASES);
@@ -401,7 +405,7 @@ const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, notificationO
         event.preventDefault();
         const value = input.trim();
         if (!value) return;
-        onSendMessage(value);
+        onSendMessage(value, domain, location);
         setInput("");
     };
 
@@ -480,6 +484,9 @@ const MapsPage = ({
     setActiveLayer,
     location,
     onLocateMe,
+    locating,
+    onSearchLocation,
+    onCoordinateSelect,
     notificationOpen,
     setNotificationOpen,
     onGoToOverview,
@@ -487,12 +494,118 @@ const MapsPage = ({
 }) => {
     const [mapMode, setMapMode] = useState("3D");
     const [timeline, setTimeline] = useState(0);
-    const [selectedMetric, setSelectedMetric] = useState(activeLayer === "none" ? "temperature" : activeLayer);
+    const [selectedMetric, setSelectedMetric] = useState(activeLayer);
     const [searchValue, setSearchValue] = useState("");
+    const [searching, setSearching] = useState(false);
+    const [searchError, setSearchError] = useState("");
+
+    const mapElementRef = useRef(null);
+    const leafletMapRef = useRef(null);
+    const leafletMarkerRef = useRef(null);
+    const coordinateSelectRef = useRef(onCoordinateSelect);
 
     useEffect(() => {
-        setSelectedMetric(activeLayer === "none" ? "temperature" : activeLayer);
+        coordinateSelectRef.current = onCoordinateSelect;
+    }, [onCoordinateSelect]);
+
+    useEffect(() => {
+        setSelectedMetric(activeLayer);
     }, [activeLayer]);
+
+    useEffect(() => {
+        if (!globeEngine) return;
+        globeEngine.setInteractionEnabled(mapMode === "3D");
+    }, [mapMode, globeEngine]);
+
+    useEffect(() => {
+        if (!mapElementRef.current || typeof L === "undefined") return;
+
+        const map = L.map(mapElementRef.current, {
+    zoomControl: true,
+    attributionControl: true,
+    worldCopyJump: false,
+    minZoom: 2,
+    maxZoom: 19,
+    maxBounds: [
+        [-85, -180],
+        [85, 180]
+    ],
+    maxBoundsViscosity: 1.0
+});
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        noWrap: true,
+        keepBuffer: 4,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        map.on("click", (event) => {
+            coordinateSelectRef.current?.(
+                event.latlng.lat,
+                event.latlng.lng
+            );
+        });
+
+        leafletMapRef.current = map;
+
+        const initialLat = Number(location?.lat);
+        const initialLon = Number(location?.lon);
+
+        if (Number.isFinite(initialLat) && Number.isFinite(initialLon)) {
+            map.setView([initialLat, initialLon], 8);
+        } else {
+            map.setView([20, 0], 2);
+        }
+
+        const resizeTimer = window.setTimeout(() => map.invalidateSize(), 0);
+
+        return () => {
+            window.clearTimeout(resizeTimer);
+            map.remove();
+            leafletMapRef.current = null;
+            leafletMarkerRef.current = null;
+        };
+    }, []);
+
+    useEffect(() => {
+        const map = leafletMapRef.current;
+        if (!map) return;
+
+        const latitude = Number(location?.lat);
+        const longitude = Number(location?.lon);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+        if (!leafletMarkerRef.current) {
+            leafletMarkerRef.current = L.circleMarker(
+                [latitude, longitude],
+                {
+                    radius: 7,
+                    color: "#16c8ff",
+                    weight: 2,
+                    fillColor: "#16c8ff",
+                    fillOpacity: 0.85
+                }
+            ).addTo(map);
+        } else {
+            leafletMarkerRef.current.setLatLng([latitude, longitude]);
+        }
+
+        map.setView([latitude, longitude], Math.max(map.getZoom(), 7), {
+            animate: true,
+            duration: 0.45
+        });
+
+        if (mapMode === "2D") {
+            window.setTimeout(() => map.invalidateSize(), 0);
+        }
+
+        globeEngine?.setLocationMarker(latitude, longitude);
+        globeEngine?.focusLocation(latitude, longitude);
+    }, [location, mapMode, globeEngine]);
 
     const layers = [
         { id: "none", label: "Base Earth", icon: null },
@@ -511,6 +624,26 @@ const MapsPage = ({
         setTimeline((value) => Math.max(-100, Math.min(100, value + delta)));
     };
 
+    const submitSearch = async (event) => {
+        event?.preventDefault();
+
+        const query = searchValue.trim();
+        if (!query || searching) return;
+
+        setSearching(true);
+        setSearchError("");
+
+        try {
+            await onSearchLocation(query);
+        } catch (error) {
+            setSearchError(
+                error instanceof Error ? error.message : "Location search failed."
+            );
+        } finally {
+            setSearching(false);
+        }
+    };
+
     return (
         <div className="app-page maps-page pointer-events-layer">
             <div className="page-top-controls">
@@ -521,38 +654,38 @@ const MapsPage = ({
                 />
             </div>
 
-            {mapMode === "2D" && (
-                <div className="map-2d-surface" aria-hidden="true">
-                    <div className="map-2d-grid" />
-                    <div className="map-2d-label">2D MAP VIEW</div>
-                </div>
-            )}
+            <div className={`map-2d-surface ${mapMode === "2D" ? "is-visible" : ""}`}>
+                <div ref={mapElementRef} className="leaflet-map" aria-label="2D OpenStreetMap view" />
+            </div>
 
             <div className="maps-left-column">
-                <div className="search-shell glass-panel">
+                <form className="search-shell glass-panel" onSubmit={submitSearch}>
                     <IconSearch />
                     <input
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
-                        placeholder="Find location"
+                        placeholder={searching ? "Searching..." : "Find location"}
                         aria-label="Find location"
+                        disabled={searching}
                     />
-                    <button className="search-small" onClick={onLocateMe} aria-label="Use current location">
+                    <button
+                        type="button"
+                        className="search-small"
+                        onClick={onLocateMe}
+                        aria-label="Use current location"
+                        disabled={searching}
+                    >
                         <IconLocate size={15} />
                     </button>
-                </div>
+                </form>
 
-                <div className="map-summary glass-panel">
-                    <div className="eyebrow">Selected location</div>
-                    <h3>{location?.name || "Global view"}</h3>
-                    <div className="summary-stats">
-                        <div><span>Temp</span><strong>29°C</strong></div>
-                        <div><span>Wind</span><strong>14 km/h</strong></div>
+                {searchError && (
+                    <div className="map-search-error glass-panel" role="alert">
+                        {searchError}
                     </div>
-                    <div className="summary-note">Attributes update when a region is selected on the globe.</div>
-                </div>
+                )}
 
-                <LocateButton onLocateMe={onLocateMe} compact />
+                <LocateButton onLocateMe={onLocateMe} compact locating={locating} />
             </div>
 
             <div className="maps-right-column">
@@ -560,8 +693,8 @@ const MapsPage = ({
                     <div className="eyebrow">Address</div>
                     <h3>{location?.displayName || location?.name || "Select a region"}</h3>
                     <div className="coordinates">
-                        <span>LAT {location?.lat || "--"}</span>
-                        <span>LON {location?.lon || "--"}</span>
+                        <span>LAT {Number.isFinite(Number(location?.lat)) ? Number(location.lat).toFixed(4) : "--"}</span>
+                        <span>LON {Number.isFinite(Number(location?.lon)) ? Number(location.lon).toFixed(4) : "--"}</span>
                     </div>
                 </div>
 
@@ -569,8 +702,8 @@ const MapsPage = ({
                     <div className="eyebrow">Overview of selected location</div>
                     <p>
                         {location
-                            ? `${location.name} is selected. Explore atmospheric layers and time progression below.`
-                            : "Click the Earth to select a region and populate its local context."}
+                            ? `${location.name} is selected. The 2D map and 3D globe use the same marker and coordinates.`
+                            : "Click the Earth or the 2D map to select a region and populate its local context."}
                     </p>
                 </div>
 

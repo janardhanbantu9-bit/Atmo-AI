@@ -11,7 +11,16 @@ export async function POST(request) {
       );
     }
 
-    const reply = await askGroq(body.message);
+    const domain =
+      typeof body.domain === "string" && body.domain.trim()
+        ? body.domain.trim()
+        : "research";
+
+    const location = body.location && typeof body.location === "object"
+      ? body.location
+      : null;
+
+    const reply = await askGroq(body.message, { domain, location });
 
     return Response.json({ reply });
   } catch (error) {

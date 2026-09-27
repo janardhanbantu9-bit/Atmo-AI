@@ -1,10 +1,10 @@
-async function sendMessage(message) {
+async function sendMessage(message, domain = "research", location = null) {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, domain, location }),
   });
 
   const data = await response.json().catch(() => ({}));
