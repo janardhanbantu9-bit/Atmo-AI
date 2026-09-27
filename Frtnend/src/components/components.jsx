@@ -392,8 +392,13 @@ const LandingPage = ({ setView, onLocateMe, locating, notificationOpen, setNotif
     );
 };
 
-const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, notificationOpen, setNotificationOpen, onGoToOverview }) => {
+const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, notificationOpen, setNotificationOpen, onGoToOverview, responseLanguage, setResponseLanguage }) => {
     const [input, setInput] = useState("");
+    const [voiceState, setVoiceState] = useState("idle");
+    const [voiceError, setVoiceError] = useState("");
+    const [speakingId, setSpeakingId] = useState(null);
+    const [speechError, setSpeechError] = useState("");
+    const [speechNotice, setSpeechNotice] = useState("");
     const chatEndRef = useRef(null);
     const placeholder = useTypewriter(TYPEWRITER_PHRASES);
 
@@ -405,8 +410,50 @@ const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, not
         event.preventDefault();
         const value = input.trim();
         if (!value) return;
-        onSendMessage(value, domain, location);
+        onSendMessage(value, domain, location, responseLanguage);
         setInput("");
+    };
+
+    const toggleRecording = async () => {
+        if (voiceState === "recording") {
+            window.AtmoVoice?.stopRecording();
+            setVoiceState("transcribing");
+            return;
+        }
+        if (voiceState !== "idle") return;
+        setVoiceError("");
+        setVoiceState("starting");
+        try {
+            const transcript = await window.AtmoVoice.recordAndTranscribe("auto", () => setVoiceState("recording"));
+            setVoiceState("idle");
+            if (transcript.trim()) {
+                setInput(transcript.trim());
+            } else {
+                setVoiceError("No speech was detected. Try recording again.");
+            }
+        } catch (error) {
+            setVoiceState("idle");
+            setVoiceError(error.message || "Voice input failed.");
+        }
+    };
+
+    const speakReply = async (id, text) => {
+        if (speakingId) return;
+        setSpeechError("");
+        setSpeechNotice("");
+        setSpeakingId(id);
+        try {
+            const inferredLanguage = responseLanguage === "auto"
+                ? /\p{Script=Arabic}/u.test(text) ? "arabic" : /\p{Script=Devanagari}/u.test(text) ? "Hindi" : /\p{Script=Telugu}/u.test(text) ? "Telugu" : /\p{Script=Bengali}/u.test(text) ? "Bengali" : "english"
+                : responseLanguage;
+            const mode = inferredLanguage === "English" ? "english" : inferredLanguage === "Arabic" ? "arabic" : inferredLanguage;
+            const result = await window.AtmoVoice.speak(text, mode);
+            if (result?.fallback) setSpeechNotice("Groq voice is unavailable for this key; playing with your browser's voice instead.");
+        } catch (error) {
+            setSpeechError(error.message || "Audio playback failed.");
+        } finally {
+            setSpeakingId(null);
+        }
     };
 
     return (
@@ -434,6 +481,12 @@ const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, not
                             <option value="research">Research</option>
                         </select>
                     </label>
+                    <label className="context-select language-select">
+                        <span>Response language</span>
+                        <select value={responseLanguage} onChange={(e) => setResponseLanguage(e.target.value)}>
+                            {["Auto", "English", "Hindi", "Telugu", "Arabic", "Spanish", "French", "German", "Portuguese", "Japanese", "Korean", "Chinese", "Urdu", "Bengali"].map((language) => <option key={language} value={language === "Auto" ? "auto" : language}>{language}</option>)}
+                        </select>
+                    </label>
                 </div>
 
                 <div className="chat-stream">
@@ -449,6 +502,7 @@ const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, not
                             )}
                             <div className={`chat-bubble ${msg.role === "user" ? "user-bubble" : "assistant-bubble"}`}>
                                 {msg.text}
+                                {msg.role === "ai" && !msg.pendingId && <button type="button" className="message-speak" aria-label="Speak this response" disabled={Boolean(speakingId)} onClick={() => speakReply(index, msg.text)}>{speakingId === index ? "Playing…" : "🔊 Listen"}</button>}
                             </div>
                         </div>
                     ))}
@@ -462,8 +516,8 @@ const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, not
                         placeholder={input ? "" : placeholder}
                         aria-label="Ask AtmoSphere"
                     />
-                    <button type="button" className="composer-icon" aria-label="Voice input">
-                        <IconMic />
+                    <button type="button" className={`composer-icon ${voiceState === "recording" ? "recording" : ""}`} aria-label={voiceState === "recording" ? "Stop recording" : "Start voice input"} disabled={voiceState === "starting" || voiceState === "transcribing"} onClick={toggleRecording}>
+                        {voiceState === "transcribing" ? "…" : <IconMic />}
                     </button>
                     <button
                         type="submit"
@@ -473,6 +527,7 @@ const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, not
                         <IconSend />
                     </button>
                 </form>
+                {(voiceError || speechError || speechNotice || voiceState !== "idle") && <div className="chat-disclaimer" role="status">{voiceError || speechError || speechNotice || (voiceState === "starting" ? "Waiting for microphone permission…" : voiceState === "recording" ? "Recording… click the mic to finish." : "Transcribing audio…")}</div>}
                 <div className="chat-disclaimer">AtmoSphere can make mistakes. Verify critical conditions before acting.</div>
             </div>
         </div>
@@ -771,7 +826,30 @@ const OverviewPage = ({
     const [metric, setMetric] = useState("temperature");
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
-    const [rangeLabel, setRangeLabel] = useState("1 week");
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const coordinates = `${location?.lat ?? ""},${location?.lon ?? ""}`;
+    useEffect(() => {
+        if (!location || !Number.isFinite(Number(location.lat)) || !Number.isFinite(Number(location.lon))) {
+            setData(null); setError("Select a location on the globe or map to load its overview."); return;
+        }
+        const controller = new AbortController();
+        const params = new URLSearchParams({ lat: String(location.lat), lon: String(location.lon) });
+        if (fromDate) params.set("start", fromDate);
+        if (toDate) params.set("end", toDate);
+        setLoading(true); setError("");
+        setData(null);
+        fetch(`/api/overview?${params}`, { signal: controller.signal }).then(async (response) => {
+            const body = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(body.error || "Unable to load this overview.");
+            return body;
+        }).then(setData).catch((cause) => { if (cause.name !== "AbortError") setError(cause.message || "Unable to load this overview."); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        return () => controller.abort();
+    }, [coordinates, fromDate, toDate]);
+    const rangeLabel = fromDate || toDate
+        ? `${fromDate || data?.range?.start || "Start"} → ${toDate || data?.range?.end || "End"}`
+        : data?.range ? `${data.range.start} → ${data.range.end}` : "Last 7 days";
 
     const metrics = [
         { id: "temperature", label: "Temperature" },
@@ -779,19 +857,27 @@ const OverviewPage = ({
         { id: "wind", label: "Wind" }
     ];
 
-    const chartPoints = {
-        temperature: "0,72 60,61 120,66 180,42 240,50 300,36 360,40 420,24 480,32 540,20",
-        precipitation: "0,66 60,58 120,72 180,63 240,40 300,60 360,52 420,30 480,48 540,34",
-        wind: "0,49 60,39 120,50 180,35 240,48 300,28 360,44 420,32 480,40 540,26"
-    };
-
-    useEffect(() => {
-        if (fromDate && toDate) {
-            setRangeLabel(`${fromDate} → ${toDate}`);
-        } else {
-            setRangeLabel("1 week");
-        }
-    }, [fromDate, toDate]);
+    const metricFields = { temperature: "temperature_2m", precipitation: "precipitation", wind: "wind_speed_10m" };
+    const field = metricFields[metric];
+    const unit = data?.historyUnits?.[field] || "";
+    const history = data?.history;
+    const actualTimes = history?.time || [];
+    const forecastHistory = data?.historicalForecast;
+    const forecastValues = forecastHistory?.[field] || [];
+    const rangeIndices = actualTimes.map((time, i) => ({ time, i })).filter(({ time }) => (!fromDate || time.slice(0, 10) >= fromDate) && (!toDate || time.slice(0, 10) <= toDate)).map(({ i }) => i);
+    const chartStride = Math.max(1, Math.ceil(rangeIndices.length / 540));
+    const filteredIndices = rangeIndices.filter((_, index) => index % chartStride === 0 || index === rangeIndices.length - 1);
+    const chartNumbers = filteredIndices.flatMap((i) => [history?.[field]?.[i], forecastValues[i]]).filter(Number.isFinite);
+    const chartMin = chartNumbers.length ? chartNumbers.reduce((min, value) => Math.min(min, value), Infinity) : 0;
+    const chartMax = chartNumbers.length ? chartNumbers.reduce((max, value) => Math.max(max, value), -Infinity) : 0;
+    const chartSpan = chartNumbers.length ? chartMax - chartMin || 1 : 1;
+    const chartFor = (values) => filteredIndices.map((index, position) => Number.isFinite(values[index]) ? `${filteredIndices.length < 2 ? 270 : position * 540 / (filteredIndices.length - 1)},${100 - (values[index] - chartMin) * 88 / chartSpan}` : null).filter(Boolean).join(" ");
+    const actualPoints = chartFor(history?.[field] || []);
+    const forecastPoints = chartFor(forecastValues);
+    const displayValue = (value, units = "") => Number.isFinite(value) ? `${value.toFixed(1)}${units ? ` ${units}` : ""}` : "Unavailable";
+    const current = data?.current;
+    const forecast = data?.forecast;
+    const formatDate = (value) => new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
     return (
         <div className="app-page overview-page pointer-events-layer overview-scroll">
@@ -846,6 +932,15 @@ const OverviewPage = ({
                     ))}
                 </div>
 
+                {loading && <div className="overview-chart-card glass-panel" role="status">Loading weather and climate data…</div>}
+                {error && <div className="overview-chart-card glass-panel" role="alert">{error}</div>}
+                {data && <>
+                <section className="overview-chart-card glass-panel">
+                    <div className="section-heading compact"><div className="eyebrow">Current conditions</div><h3>{current?.time ? new Date(current.time).toLocaleString() : "Latest available"}</h3></div>
+                    <div className="overview-data-grid">
+                        {[["Temperature", current?.temperature_2m, data.currentUnits?.temperature_2m], ["Feels like", current?.apparent_temperature, data.currentUnits?.apparent_temperature], ["Humidity", current?.relative_humidity_2m, data.currentUnits?.relative_humidity_2m], ["Wind", current?.wind_speed_10m, data.currentUnits?.wind_speed_10m], ["EU AQI", data.airQuality?.european_aqi, data.airQualityUnits?.european_aqi], ["PM2.5", data.airQuality?.pm2_5, data.airQualityUnits?.pm2_5], ["River discharge", data.flood?.river_discharge?.[0], data.floodUnits?.river_discharge], ["Wave height", data.marineCurrent?.wave_height, data.marineCurrentUnits?.wave_height]].map(([label, value, units]) => <div className="overview-data-item" key={label}><span>{label}</span><strong>{displayValue(value, units)}</strong></div>)}
+                    </div>
+                </section>
                 <div className="overview-chart-card glass-panel">
                     <div className="overview-chart-head">
                         <div>
@@ -862,14 +957,18 @@ const OverviewPage = ({
                                 <stop offset="100%" stopColor="#39b9ff" stopOpacity="0" />
                             </linearGradient>
                         </defs>
-                        <polyline
-                            fill="none"
-                            stroke="#39b9ff"
-                            strokeWidth="2.5"
-                            points={chartPoints[metric]}
-                        />
+                        {actualPoints && <polyline fill="none" stroke="#39b9ff" strokeWidth="2.5" points={actualPoints} />}
+                        {forecastPoints && <polyline fill="none" stroke="#f5b942" strokeWidth="2" strokeDasharray="5 4" points={forecastPoints} />}
                     </svg>
+                    <div className="overview-chart-legend"><span>Observed historical data</span><span>Archived forecast</span><span>{rangeIndices.length} hourly points · {unit}</span></div>
+                    {!actualPoints && <p>No historical {metric} values were returned for this date range.</p>}
                 </div>
+
+                <section className="overview-chart-card glass-panel"><div className="section-heading compact"><div className="eyebrow">7-day outlook</div><h3>Forecast</h3></div><div className="overview-data-grid">{(forecast?.time || []).map((day, i) => <div className="overview-data-item" key={day}><span>{formatDate(day)}</span><strong>High {displayValue(forecast.temperature_2m_max?.[i], data.forecastUnits?.temperature_2m_max)}</strong><small>Low {displayValue(forecast.temperature_2m_min?.[i], data.forecastUnits?.temperature_2m_min)} · Rain {displayValue(forecast.precipitation_sum?.[i], data.forecastUnits?.precipitation_sum)}</small></div>)}</div></section>
+
+                <section className="overview-chart-card glass-panel"><div className="section-heading compact"><div className="eyebrow">Environmental conditions</div><h3>Air, river & marine</h3></div><div className="overview-data-grid">{[["US AQI", data.airQuality?.us_aqi, data.airQualityUnits?.us_aqi], ["PM10", data.airQuality?.pm10, data.airQualityUnits?.pm10], ["River discharge mean", data.flood?.river_discharge_mean?.[0], data.floodUnits?.river_discharge_mean], ["River discharge P75", data.flood?.river_discharge_p75?.[0], data.floodUnits?.river_discharge_p75], ["Wave period", data.marineCurrent?.wave_period, data.marineCurrentUnits?.wave_period], ["Sea surface temperature", data.marineCurrent?.sea_surface_temperature, data.marineCurrentUnits?.sea_surface_temperature], ["Ocean current velocity", data.marineCurrent?.ocean_current_velocity, data.marineCurrentUnits?.ocean_current_velocity]].map(([label, value, units]) => <div className="overview-data-item" key={label}><span>{label}</span><strong>{displayValue(value, units)}</strong></div>)}</div></section>
+
+                <section className="overview-chart-card glass-panel"><div className="section-heading compact"><div className="eyebrow">River outlook</div><h3>Daily discharge</h3></div><div className="overview-data-grid">{(data.flood?.time || []).map((day, i) => <div className="overview-data-item" key={day}><span>{formatDate(day)}</span><strong>{displayValue(data.flood.river_discharge?.[i], data.floodUnits?.river_discharge)}</strong><small>Ensemble P75: {displayValue(data.flood.river_discharge_p75?.[i], data.floodUnits?.river_discharge_p75)}</small></div>)}</div>{!data.flood?.time?.length && <p>River discharge data is unavailable for this location.</p>}</section>
 
                 <section className="predictions-section">
                     <div className="section-heading compact">
@@ -877,11 +976,13 @@ const OverviewPage = ({
                         <h3>Significant events</h3>
                     </div>
 
-                    <div className="prediction-empty glass-panel">
+                    {data.events?.length ? <div className="overview-data-grid">{data.events.map((event, i) => <div className="overview-data-item" key={`${event.type}-${i}`}><span>{event.severity} · {event.type}</span><strong>{event.title}</strong><small>{event.detail}</small></div>)}</div> : <div className="prediction-empty glass-panel">
                         <IconAlert size={18} />
                         <span>No significant events predicted.</span>
-                    </div>
+                    </div>}
                 </section>
+                <section className="overview-chart-card glass-panel"><div className="section-heading compact"><div className="eyebrow">Forecast reality check</div><h3>Historical forecast comparison</h3></div><p>{Number.isFinite(data.analysis?.forecastTemperatureMae) ? `Mean absolute temperature error: ${data.analysis.forecastTemperatureMae.toFixed(2)} ${data.historyUnits?.temperature_2m || "°C"} across ${data.analysis.forecastTemperatureMaeSamples} matching hourly observations.` : "No matching archived forecast and observed temperature samples were returned for this range."}</p></section>
+                </>}
             </div>
         </div>
     );

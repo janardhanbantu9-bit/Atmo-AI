@@ -1329,3 +1329,16 @@ button {
         align-items: flex-start;
     }
 }
+
+/* Live Overview and chat voice controls */
+.overview-data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 10px; margin-top: 14px; }
+.overview-data-item { display: flex; flex-direction: column; gap: 7px; min-width: 0; padding: 14px; border: 1px solid rgba(255,255,255,.09); border-radius: 14px; background: rgba(255,255,255,.035); }
+.overview-data-item > span, .overview-data-item small, .overview-chart-legend { color: rgba(226,232,240,.62); font-size: 12px; }
+.overview-data-item strong { color: #f8fafc; font-size: 16px; overflow-wrap: anywhere; }
+.overview-chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+.message-speak { display: block; margin-top: 10px; padding: 5px 9px; color: #a5dfff; border: 1px solid rgba(165,223,255,.25); border-radius: 999px; background: transparent; cursor: pointer; font-size: 12px; }
+.message-speak:disabled { opacity: .55; cursor: wait; }
+.composer-icon.recording { color: #ff7b7b; animation: atmo-record-pulse 1s infinite alternate; }
+.composer-icon:disabled { opacity: .6; cursor: wait; }
+.language-select { margin-left: 10px; }
+@keyframes atmo-record-pulse { to { box-shadow: 0 0 0 6px rgba(255,80,80,.16); } }

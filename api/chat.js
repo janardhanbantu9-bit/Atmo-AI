@@ -1,14 +1,12 @@
 import { askGroq } from "../backend/services/groqServices.js";
 
-export async function POST(request) {
+export default async function handler(req, res) {
   try {
-    const body = await request.json();
+    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    const body = req.body || {};
 
     if (!body.message || typeof body.message !== "string") {
-      return Response.json(
-        { error: "Message is required" },
-        { status: 400 }
-      );
+      return res.status(400).json({ error: "Message is required" });
     }
 
     const domain =
@@ -20,15 +18,13 @@ export async function POST(request) {
       ? body.location
       : null;
 
-    const reply = await askGroq(body.message, { domain, location });
+    const language = typeof body.language === "string" ? body.language : "auto";
+    const reply = await askGroq(body.message, { domain, location, language });
 
-    return Response.json({ reply });
+    return res.status(200).json({ reply });
   } catch (error) {
     console.error("Groq API error:", error);
 
-    return Response.json(
-      { error: "Failed to contact Groq" },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to contact Groq" });
   }
 }
