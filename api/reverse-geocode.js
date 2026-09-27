@@ -1,28 +1,23 @@
 import { reverseGeocode } from "../backend/services/location/reverseGeocodingService.js";
 
-export async function POST(request) {
+export default async function handler(req, res) {
   try {
-    const body = await request.json();
+    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    const body = req.body || {};
 
     const latitude = Number(body.latitude);
     const longitude = Number(body.longitude);
 
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      return Response.json(
-        { error: "Valid latitude and longitude are required" },
-        { status: 400 }
-      );
+      return res.status(400).json({ error: "Valid latitude and longitude are required" });
     }
 
     const result = await reverseGeocode(latitude, longitude);
 
-    return Response.json(result);
+    return res.status(200).json(result);
   } catch (error) {
     console.error("Reverse geocoding error:", error);
 
-    return Response.json(
-      { error: "Failed to resolve location" },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: "Failed to resolve location" });
   }
 }

@@ -159,7 +159,7 @@ async function executeTool(toolCall) {
 
 export async function askGroq(
   userMessage,
-  { domain = "research", location = null } = {}
+  { domain = "research", location = null, language = "auto" } = {}
 ) {
   const selectedLocation = cleanLocation(location);
 
@@ -194,6 +194,7 @@ export async function askGroq(
     "Never claim that you lack data for a named place before trying get_location.",
     "Never invent weather values.",
     `The active app domain/context is: ${domain}.`,
+    language && language !== "auto" ? `Respond in ${language}. Keep the answer natural and concise.` : "Respond in the language used by the user.",
     "",
     `SELECTED LOCATION:\n${JSON.stringify(selectedLocation)}`,
     "",

@@ -1,3 +1,7 @@
+import OpenAI from "openai";
+
+const groq = new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: "https://api.groq.com/openai/v1" });
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -20,6 +24,10 @@ export default async function handler(req, res) {
     english: { model: "canopylabs/orpheus-v1-english", voice: "hannah" },
     arabic: { model: "canopylabs/orpheus-arabic-saudi", voice: "noura" },
   };
+  if (!models[mode]) {
+    res.status(501).json({ error: `Orpheus speech is not configured for ${mode}.` });
+    return;
+  }
   const selected = models[mode] || models.english;
   const input = text.replace(/\s+/g, " ").trim().slice(0, 200);
   if (!input) {
@@ -27,27 +35,20 @@ export default async function handler(req, res) {
     return;
   }
 
-  const response = await fetch("https://api.groq.com/openai/v1/audio/speech", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  let audio;
+  try {
+    audio = await groq.audio.speech.create({
       model: selected.model,
       voice: selected.voice,
       input,
       response_format: "wav",
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    res.status(response.status).json({ error: errorText || "Speech synthesis failed." });
+    });
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.message || "Speech synthesis failed." });
     return;
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
+  const buffer = Buffer.from(await audio.arrayBuffer());
   res.status(200).json({
     audio: buffer.toString("base64"),
     mimeType: "audio/wav",

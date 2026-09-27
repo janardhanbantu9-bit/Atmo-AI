@@ -1,4 +1,7 @@
 export const config = { api: { bodyParser: false } };
+import OpenAI, { toFile } from "openai";
+
+const groq = new OpenAI({ apiKey: process.env.GROQ_API_KEY, baseURL: "https://api.groq.com/openai/v1" });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -12,28 +15,32 @@ export default async function handler(req, res) {
     return;
   }
 
-  const chunks = [];
-  for await (const chunk of req) chunks.push(Buffer.from(chunk));
+  const chunks = await new Promise((resolve, reject) => {
+    const received = [];
+    req.on("data", (chunk) => received.push(Buffer.from(chunk)));
+    req.on("end", () => resolve(received));
+    req.on("error", reject);
+  });
   const contentType = req.headers["content-type"] || "application/octet-stream";
   const body = Buffer.concat(chunks);
+  if (!body.length) {
+    res.status(400).json({ error: "Audio data is required." });
+    return;
+  }
 
-  const form = new FormData();
   const language = req.headers["x-atmo-language"];
-  form.append("file", new Blob([body], { type: contentType }), "atmo-recording.webm");
-  form.append("model", "whisper-large-v3");
-  form.append("response_format", "json");
-  form.append("temperature", "0");
-  if (language && language !== "auto") form.append("language", language);
-
-  const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}` },
-    body: form,
-  });
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    res.status(response.status).json({ error: data?.error?.message || "Speech transcription failed." });
+  const extension = contentType.includes("ogg") ? "ogg" : contentType.includes("mp4") ? "mp4" : "webm";
+  let data;
+  try {
+    data = await groq.audio.transcriptions.create({
+      file: await toFile(body, `atmo-recording.${extension}`, { type: contentType }),
+      model: "whisper-large-v3",
+      response_format: "json",
+      temperature: 0,
+      ...(language && language !== "auto" ? { language } : {}),
+    });
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.message || "Speech transcription failed." });
     return;
   }
 

@@ -5,6 +5,7 @@ const App = () => {
     const [activeLayer, setActiveLayer] = useState("none");
     const [location, setLocation] = useState(null);
     const [domain, setDomain] = useState("marine");
+    const [responseLanguage, setResponseLanguage] = useState("auto");
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [locating, setLocating] = useState(false);
 
@@ -249,7 +250,7 @@ const App = () => {
         }
     };
 
-    const handleUserMessage = async (text, selectedDomain = domain, selectedLocation = location) => {
+    const handleUserMessage = async (text, selectedDomain = domain, selectedLocation = location, selectedLanguage = responseLanguage) => {
         const pendingId = `pending-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
         setChatHistory((prev) => [
@@ -259,7 +260,7 @@ const App = () => {
         ]);
 
         try {
-            const reply = await window.sendMessage(text, selectedDomain, selectedLocation);
+            const reply = await window.sendMessage(text, selectedDomain, selectedLocation, selectedLanguage);
 
             setChatHistory((prev) =>
                 prev.map((message) =>
@@ -313,6 +314,8 @@ const App = () => {
                     notificationOpen={notificationOpen}
                     setNotificationOpen={setNotificationOpen}
                     onGoToOverview={() => goTo("overview")}
+                    responseLanguage={responseLanguage}
+                    setResponseLanguage={setResponseLanguage}
                 />
             )}
 

@@ -2,9 +2,8 @@
   let activeRecorder = null;
   let activeStream = null;
   let chunks = [];
-  let wrappedSendMessage = false;
 
-  async function recordAndTranscribe(language = "auto") {
+  async function recordAndTranscribe(language = "auto", onRecordingStart = () => {}) {
     if (activeRecorder) throw new Error("Already recording.");
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       throw new Error("Voice recording is not supported in this browser.");
@@ -42,6 +41,7 @@
         }
       };
       activeRecorder.start();
+      onRecordingStart();
     });
 
     return result;
@@ -51,6 +51,10 @@
     if (activeRecorder && activeRecorder.state !== "inactive") activeRecorder.stop();
   }
 
+  function isRecording() {
+    return Boolean(activeRecorder && activeRecorder.state !== "inactive");
+  }
+
   async function speak(text, mode = "english") {
     const response = await fetch("/api/speak", {
       method: "POST",
@@ -58,37 +62,35 @@
       body: JSON.stringify({ text, mode }),
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Text-to-speech failed.");
+    if (!response.ok) {
+      if ("speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = ({ english: "en-US", arabic: "ar-SA", Hindi: "hi-IN", Telugu: "te-IN", Spanish: "es-ES", French: "fr-FR", German: "de-DE", Portuguese: "pt-BR", Japanese: "ja-JP", Korean: "ko-KR", Chinese: "zh-CN", Urdu: "ur-PK", Bengali: "bn-IN" })[mode] || "en-US";
+        await new Promise((resolve, reject) => {
+          utterance.onend = resolve;
+          utterance.onerror = () => reject(new Error(data.error || "Text-to-speech failed."));
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utterance);
+        });
+        return { fallback: true };
+      }
+      throw new Error(data.error || "Text-to-speech failed.");
+    }
 
     const bytes = Uint8Array.from(atob(data.audio), (char) => char.charCodeAt(0));
     const blob = new Blob([bytes], { type: data.mimeType || "audio/wav" });
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    audio.onended = () => URL.revokeObjectURL(url);
-    await audio.play();
-  }
-
-  function wrapSendMessageForLanguage() {
-    if (wrappedSendMessage || typeof window.sendMessage !== "function") return;
-    const original = window.sendMessage;
-    window.sendMessage = function (text, domain, location) {
-      const language = window.__ATMO_RESPONSE_LANGUAGE__ || "auto";
-      if (language && language !== "auto") {
-        return original(
-          `${text}\n\nRespond in ${language}. Keep the answer concise and natural.`,
-          domain,
-          location
-        );
-      }
-      return original(text, domain, location);
-    };
-    wrappedSendMessage = true;
+    await new Promise((resolve, reject) => {
+      audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+      audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Audio playback failed.")); };
+      audio.play().catch((error) => { URL.revokeObjectURL(url); reject(error); });
+    });
+    return { fallback: false };
   }
 
   function install() {
-    window.AtmoVoice = { recordAndTranscribe, stopRecording, speak };
-    wrapSendMessageForLanguage();
-    if (!wrappedSendMessage) window.setTimeout(wrapSendMessageForLanguage, 150);
+    window.AtmoVoice = { recordAndTranscribe, stopRecording, isRecording, speak };
   }
 
   if (document.readyState === "loading") {
