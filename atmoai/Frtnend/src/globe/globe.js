@@ -268,49 +268,25 @@ class GlobeEngine {
         }
     }
 
-    focusLocation(lat, lon, resumeInteraction = true) {
+    focusLocation(lat, lon) {
         const latitude = Number(lat);
         const longitude = Number(lon);
 
         if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
-        const token = ++this.focusToken;
         const latRadians = THREE.MathUtils.degToRad(latitude);
         const lonRadians = THREE.MathUtils.degToRad(longitude);
 
-        this.interactionEnabled = false;
-        if (this.controls) {
-            this.controls.enabled = false;
-            this.controls.autoRotate = false;
-        }
-        if (this.renderer?.domElement) {
-            this.renderer.domElement.style.pointerEvents = 'none';
-            this.renderer.domElement.style.cursor = 'default';
-        }
         this.setLocationMarker(latitude, longitude);
 
+        // Focus only changes the Earth's target rotation. Interaction state is
+        // owned by Maps view / the 2D toggle and must remain untouched here.
         this.targetEarthRotation.set(
-            latRadians,
+            -latRadians,
             -lonRadians,
             0
         );
-
-        if (this.focusTimer) {
-            window.clearTimeout(this.focusTimer);
-        }
-
-        if (resumeInteraction && this.currentView === "maps") {
-            this.focusTimer = window.setTimeout(() => {
-                if (
-                    token === this.focusToken &&
-                    this.currentView === "maps"
-                ) {
-                    this.setInteractionEnabled(true);
-                }
-            }, 850);
-        }
     }
-
     setView(view) {
         this.currentView = view;
 

@@ -9,7 +9,7 @@ export async function reverseGeocode(latitude, longitude) {
 
   const response = await fetch(url, {
     headers: {
-      "User-Agent": "AtmoSphere/1.0",
+      "User-Agent": "AtmoSphere/1.0 (climate intelligence prototype)",
     },
   });
 
@@ -20,11 +20,36 @@ export async function reverseGeocode(latitude, longitude) {
   }
 
   const data = await response.json();
+  const address = data.address ?? {};
+
+  const locality =
+    address.city ||
+    address.town ||
+    address.municipality ||
+    address.village ||
+    address.county ||
+    address.state_district ||
+    address.state ||
+    "Selected Coordinates";
+
+  const region =
+    address.state ||
+    address.state_district ||
+    address.region ||
+    null;
+
+  const country = address.country || null;
+
+  const displayParts = [
+    locality,
+    region && region !== locality ? region : null,
+    country
+  ].filter(Boolean);
 
   return {
     latitude: Number(data.lat),
     longitude: Number(data.lon),
-    displayName: data.display_name ?? null,
-    address: data.address ?? {},
+    displayName: displayParts.join(", "),
+    address,
   };
 }

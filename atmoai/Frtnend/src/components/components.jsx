@@ -388,7 +388,7 @@ const LandingPage = ({ setView, onLocateMe, notificationOpen, setNotificationOpe
     );
 };
 
-const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, notificationOpen, setNotificationOpen, onGoToOverview }) => {
+const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, location, notificationOpen, setNotificationOpen, onGoToOverview }) => {
     const [input, setInput] = useState("");
     const chatEndRef = useRef(null);
     const placeholder = useTypewriter(TYPEWRITER_PHRASES);
@@ -401,7 +401,7 @@ const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, notificationO
         event.preventDefault();
         const value = input.trim();
         if (!value) return;
-        onSendMessage(value, domain);
+        onSendMessage(value, domain, location);
         setInput("");
     };
 
@@ -588,7 +588,7 @@ const MapsPage = ({
         }
 
         globeEngine?.setLocationMarker(latitude, longitude);
-        globeEngine?.focusLocation(latitude, longitude, mapMode === "3D");
+        globeEngine?.focusLocation(latitude, longitude);
     }, [location, mapMode, globeEngine]);
 
     const layers = [
@@ -668,18 +668,6 @@ const MapsPage = ({
                         {searchError}
                     </div>
                 )}
-
-                <div className="map-summary glass-panel">
-                    <div className="eyebrow">Selected location</div>
-                    <h3>{location?.name || "Global view"}</h3>
-                    <div className="summary-coordinates">
-                        <span>{Number.isFinite(Number(location?.lat)) ? Number(location.lat).toFixed(4) : "--"}</span>
-                        <span>{Number.isFinite(Number(location?.lon)) ? Number(location.lon).toFixed(4) : "--"}</span>
-                    </div>
-                    <div className="summary-note">
-                        Search, Locate Me, and map clicks now share the same selected coordinates.
-                    </div>
-                </div>
 
                 <LocateButton onLocateMe={onLocateMe} compact />
             </div>

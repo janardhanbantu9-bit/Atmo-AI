@@ -211,7 +211,7 @@ const App = () => {
         );
     };
 
-    const handleUserMessage = async (text, selectedDomain = domain) => {
+    const handleUserMessage = async (text, selectedDomain = domain, selectedLocation = location) => {
         const pendingId = `pending-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
         setChatHistory((prev) => [
@@ -221,7 +221,7 @@ const App = () => {
         ]);
 
         try {
-            const reply = await window.sendMessage(text, selectedDomain);
+            const reply = await window.sendMessage(text, selectedDomain, selectedLocation);
 
             setChatHistory((prev) =>
                 prev.map((message) =>
@@ -270,6 +270,7 @@ const App = () => {
                     onSendMessage={handleUserMessage}
                     domain={domain}
                     setDomain={setDomain}
+                    location={location}
                     notificationOpen={notificationOpen}
                     setNotificationOpen={setNotificationOpen}
                     onGoToOverview={() => goTo("overview")}
