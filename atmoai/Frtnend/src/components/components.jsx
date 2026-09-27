@@ -287,14 +287,18 @@ const NotificationBell = ({ open, setOpen, onGoToOverview }) => (
     </div>
 );
 
-const LocateButton = ({ onLocateMe, compact = false }) => (
-    <button className={`locate-button ${compact ? "compact" : ""}`} onClick={onLocateMe}>
-        <IconLocate size={16} />
-        <span>Locate Me</span>
+const LocateButton = ({ onLocateMe, compact = false, locating = false }) => (
+    <button
+        className={`locate-button ${compact ? "compact" : ""}`}
+        onClick={onLocateMe}
+        disabled={locating}
+    >
+        <IconLocate size={15} />
+        <span>{locating ? "Locating..." : "Locate Me"}</span>
     </button>
 );
 
-const LandingPage = ({ setView, onLocateMe, notificationOpen, setNotificationOpen }) => {
+const LandingPage = ({ setView, onLocateMe, locating, notificationOpen, setNotificationOpen }) => {
     const featureCards = [
         {
             title: "Map Experience",
@@ -348,7 +352,7 @@ const LandingPage = ({ setView, onLocateMe, notificationOpen, setNotificationOpe
                         setOpen={setNotificationOpen}
                         onGoToOverview={() => setView("overview")}
                     />
-                    <LocateButton onLocateMe={onLocateMe} />
+                    <LocateButton onLocateMe={onLocateMe} locating={locating} />
                 </div>
             </section>
 
@@ -480,6 +484,7 @@ const MapsPage = ({
     setActiveLayer,
     location,
     onLocateMe,
+    locating,
     onSearchLocation,
     onCoordinateSelect,
     notificationOpen,
@@ -516,14 +521,25 @@ const MapsPage = ({
         if (!mapElementRef.current || typeof L === "undefined") return;
 
         const map = L.map(mapElementRef.current, {
-            zoomControl: true,
-            attributionControl: true,
-            worldCopyJump: true
-        });
+    zoomControl: true,
+    attributionControl: true,
+    worldCopyJump: false,
+    minZoom: 2,
+    maxZoom: 19,
+    maxBounds: [
+        [-85, -180],
+        [85, 180]
+    ],
+    maxBoundsViscosity: 1.0
+});
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
+        maxZoom: 19,
+        noWrap: true,
+        keepBuffer: 4,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         map.on("click", (event) => {
@@ -669,7 +685,7 @@ const MapsPage = ({
                     </div>
                 )}
 
-                <LocateButton onLocateMe={onLocateMe} compact />
+                <LocateButton onLocateMe={onLocateMe} compact locating={locating} />
             </div>
 
             <div className="maps-right-column">

@@ -6,6 +6,7 @@ const App = () => {
     const [location, setLocation] = useState(null);
     const [domain, setDomain] = useState("marine");
     const [notificationOpen, setNotificationOpen] = useState(false);
+    const [locating, setLocating] = useState(false);
 
     const [chatHistory, setChatHistory] = useState([
         {
@@ -15,6 +16,7 @@ const App = () => {
     ]);
 
     const engineRef = useRef(null);
+    const locateRequestRef = useRef(false);
 
     useEffect(() => {
         if (engineRef.current) return;
@@ -176,39 +178,75 @@ const App = () => {
         return loc;
     };
 
-    const handleLocateMe = () => {
+    const handleLocateMe = async () => {
+        if (locateRequestRef.current) return;
+
         if (!navigator.geolocation) {
             window.alert("Location services are not available in this browser.");
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(
-            async ({ coords }) => {
-                try {
-                    const loc = await reverseGeocode(coords.latitude, coords.longitude);
-                    selectLocation(loc);
-                } catch (error) {
-                    window.alert(
-                        error instanceof Error
-                            ? error.message
-                            : "Unable to resolve your location."
-                    );
-                }
-            },
-            (error) => {
-                const messages = {
-                    1: "Location permission was denied.",
-                    2: "Your location could not be determined.",
-                    3: "Location request timed out."
-                };
-                window.alert(messages[error.code] || "Unable to determine your location.");
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 12000,
-                maximumAge: 300000
+        locateRequestRef.current = true;
+        setLocating(true);
+
+        const getCurrentPosition = (options) => new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, options);
+        });
+
+        try {
+            let position;
+
+            try {
+                position = await getCurrentPosition({
+                    enableHighAccuracy: false,
+                    timeout: 3500,
+                    maximumAge: 300000
+                });
+            } catch (fastError) {
+                if (fastError.code === 1) throw fastError;
+
+                // Keep the existing high accuracy lookup as a fallback when a
+                // quick cached or normal-accuracy position is unavailable.
+                position = await getCurrentPosition({
+                    enableHighAccuracy: true,
+                    timeout: 8000,
+                    maximumAge: 0
+                });
             }
-        );
+
+            const { latitude, longitude } = position.coords;
+            const initialLocation = buildLocation({
+                latitude,
+                longitude,
+                name: "Current location",
+                displayName: "Current location"
+            });
+
+            // Show the user's coordinates as soon as geolocation responds;
+            // reverse geocoding can then fill in the address asynchronously.
+            selectLocation(initialLocation);
+
+            try {
+                const resolvedLocation = await reverseGeocode(latitude, longitude);
+                setLocation((current) => (
+                    current?.lat === initialLocation.lat && current?.lon === initialLocation.lon
+                        ? resolvedLocation
+                        : current
+                ));
+            } catch (error) {
+                console.warn("Locate Me reverse geocoding failed:", error);
+            }
+        } catch (error) {
+            const messages = {
+                1: "Location permission was denied.",
+                2: "Your location could not be determined.",
+                3: "Location request timed out."
+            };
+            window.alert(messages[error.code] || "Unable to determine your location.");
+        } finally {
+            locateRequestRef.current = false;
+            setLocating(false);
+        }
     };
 
     const handleUserMessage = async (text, selectedDomain = domain, selectedLocation = location) => {
@@ -259,6 +297,7 @@ const App = () => {
                 <LandingPage
                     setView={goTo}
                     onLocateMe={handleLocateMe}
+                    locating={locating}
                     notificationOpen={notificationOpen}
                     setNotificationOpen={setNotificationOpen}
                 />
@@ -283,6 +322,7 @@ const App = () => {
                     setActiveLayer={setActiveLayer}
                     location={location}
                     onLocateMe={handleLocateMe}
+                    locating={locating}
                     onSearchLocation={handleSearchLocation}
                     onCoordinateSelect={handleCoordinateSelect}
                     notificationOpen={notificationOpen}

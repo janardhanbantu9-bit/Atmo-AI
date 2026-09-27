@@ -421,6 +421,26 @@ button {
     color: var(--atmo-blue-bright);
 }
 
+.locate-button:disabled {
+    opacity: 0.75;
+    cursor: wait;
+}
+
+.locate-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: locateSpin 0.75s linear infinite;
+}
+
+@keyframes locateSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .locate-button.compact {
     align-self: flex-end;
 }

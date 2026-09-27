@@ -279,13 +279,21 @@ class GlobeEngine {
 
         this.setLocationMarker(latitude, longitude);
 
+        // THREE.SphereGeometry's equator uses x = -cos(phi), z = sin(phi),
+        // with u = phi / (2 * PI). The texture's Greenwich meridian is u=.5,
+        // so geographic (lat, lon) maps to (cos(lat)cos(lon), sin(lat),
+        // -cos(lat)sin(lon)). Solve the XYZ Euler rotations that bring that
+        // point to the camera's +Z axis.
+        const cosLat = Math.cos(latRadians);
+        const sinLat = Math.sin(latRadians);
+        const sinLon = Math.sin(lonRadians);
+        const rotateX = Math.atan2(-sinLat, cosLat * sinLon);
+        const rotatedZ = sinLat * Math.sin(rotateX) - cosLat * sinLon * Math.cos(rotateX);
+        const rotateY = Math.atan2(-cosLat * Math.cos(lonRadians), rotatedZ);
+
         // Focus only changes the Earth's target rotation. Interaction state is
         // owned by Maps view / the 2D toggle and must remain untouched here.
-        this.targetEarthRotation.set(
-            -latRadians,
-            -lonRadians,
-            0
-        );
+        this.targetEarthRotation.set(rotateX, rotateY, 0);
     }
     setView(view) {
         this.currentView = view;
@@ -326,6 +334,16 @@ class GlobeEngine {
         this.targetCamera.set(...preset.camera);
         this.targetEarthPosition.set(...preset.earth);
         this.targetEarthRotation.set(...preset.rotation);
+        if (this.controls) {
+            // Keep OrbitControls' next interactive orbit centered on the view
+            // preset, without letting its Maps camera state leak into it.
+            this.controls.target.copy(this.targetEarthPosition);
+        }
+        if (!preset.interactive && this.controls) {
+            // Start from the globe's current center so the transition begins
+            // from the current framing instead of snapping to the destination.
+            this.camera.lookAt(this.earthGroup.position);
+        }
         this.autoSpinSpeed = preset.spin;
         this.setInteractionEnabled(preset.interactive);
     }
@@ -362,7 +380,7 @@ class GlobeEngine {
     pointToLatLon(point) {
         const normalized = point.clone().normalize();
         const lat = Math.asin(normalized.y) * (180 / Math.PI);
-        const lon = Math.atan2(normalized.x, normalized.z) * (180 / Math.PI);
+        const lon = Math.atan2(-normalized.z, normalized.x) * (180 / Math.PI);
         return { lat, lon };
     }
 
@@ -371,9 +389,9 @@ class GlobeEngine {
         const lonRad = THREE.MathUtils.degToRad(lon);
         const cosLat = Math.cos(latRad);
         return new THREE.Vector3(
-            radius * cosLat * Math.sin(lonRad),
+            radius * cosLat * Math.cos(lonRad),
             radius * Math.sin(latRad),
-            radius * cosLat * Math.cos(lonRad)
+            -radius * cosLat * Math.sin(lonRad)
         );
     }
 
@@ -423,12 +441,16 @@ class GlobeEngine {
 
     animate() {
         this.animationFrameId = requestAnimationFrame(this.animate);
-        const time = this.clock.getElapsedTime();
+    const time = this.clock.getElapsedTime();
 
+    if (!this.interactionEnabled) {
         this.camera.position.lerp(this.targetCamera, this.transitionSpeed);
-        this.earthGroup.position.lerp(this.targetEarthPosition, this.transitionSpeed);
+    }
+
+    this.earthGroup.position.lerp(this.targetEarthPosition, this.transitionSpeed);
 
         if (!this.interactionEnabled) {
+            this.camera.lookAt(this.earthGroup.position);
             this.earthGroup.rotation.x = THREE.MathUtils.lerp(
                 this.earthGroup.rotation.x,
                 this.targetEarthRotation.x,
@@ -450,7 +472,7 @@ class GlobeEngine {
         }
 
         if (this.clouds) {
-            this.clouds.rotation.y += 0.0008;
+            this.clouds.rotation.y += 0.00025;
         }
 
         if (this.dataUniforms) {
