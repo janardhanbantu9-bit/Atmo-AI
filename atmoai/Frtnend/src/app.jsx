@@ -32,9 +32,61 @@ const App = () => {
     }, [view]);
 
     useEffect(() => {
+        if (!engineRef.current || !location) return;
+
+        const latitude = Number(location.lat);
+        const longitude = Number(location.lon);
+
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            engineRef.current.setLocationMarker(latitude, longitude);
+        }
+    }, [location]);
+
+    useEffect(() => {
         if (!engineRef.current) return;
         engineRef.current.setLayer(activeLayer);
     }, [activeLayer]);
+
+    const buildLocation = ({
+        latitude,
+        longitude,
+        name,
+        address = {},
+        displayName = null,
+        city = null,
+        state = null,
+        country = null
+    }) => {
+        const lat = Number(latitude);
+        const lon = Number(longitude);
+
+        const resolvedCity = city || address.city || address.town || address.municipality || null;
+        const resolvedState = state || address.state || address.state_district || null;
+        const resolvedCountry = country || address.country || null;
+
+        return {
+            lat,
+            lon,
+            name:
+                name ||
+                resolvedCity ||
+                address.village ||
+                address.suburb ||
+                address.county ||
+                "Selected Coordinates",
+            city: resolvedCity,
+            state: resolvedState,
+            country: resolvedCountry,
+            displayName:
+                displayName ||
+                [
+                    name || resolvedCity || address.village || address.suburb || null,
+                    resolvedState,
+                    resolvedCountry
+                ].filter(Boolean).join(", ") ||
+                null
+        };
+    };
 
     const reverseGeocode = async (latitude, longitude) => {
         const response = await fetch("/api/reverse-geocode", {
@@ -48,26 +100,80 @@ const App = () => {
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-            throw new Error(data.error || "Unable to resolve your location.");
+            throw new Error(data.error || "Unable to resolve the selected location.");
         }
 
-        const address = data.address || {};
-        return {
-            lat: Number(latitude).toFixed(2),
-            lon: Number(longitude).toFixed(2),
-            name:
-                address.suburb ||
-                address.town ||
-                address.village ||
-                address.city ||
-                address.municipality ||
-                address.county ||
-                "Current location",
-            city: address.city || null,
-            state: address.state || null,
-            country: address.country || null,
+        return buildLocation({
+            latitude: data.latitude ?? latitude,
+            longitude: data.longitude ?? longitude,
+            address: data.address || {},
             displayName: data.displayName || null
-        };
+        });
+    };
+
+    const selectLocation = (loc) => {
+        if (!loc) return;
+        setLocation(loc);
+        setView("maps");
+        setNotificationOpen(false);
+    };
+
+    const handleCoordinateSelect = async (latitude, longitude) => {
+        try {
+            const loc = await reverseGeocode(latitude, longitude);
+            selectLocation(loc);
+        } catch (error) {
+            console.error("Reverse geocoding failed:", error);
+            selectLocation(
+                buildLocation({
+                    latitude,
+                    longitude,
+                    name: "Selected Coordinates"
+                })
+            );
+        }
+    };
+
+    const handleSearchLocation = async (query) => {
+        const response = await fetch(`/api/geocode?name=${encodeURIComponent(query)}`);
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(data.error || "Location search failed.");
+        }
+
+        const firstResult = data.results?.[0];
+
+        if (!firstResult) {
+            throw new Error(`No location found for "${query}".`);
+        }
+
+        const latitude = Number(firstResult.latitude);
+        const longitude = Number(firstResult.longitude);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            throw new Error("The location service returned invalid coordinates.");
+        }
+
+        let loc;
+
+        try {
+            loc = await reverseGeocode(latitude, longitude);
+        } catch (error) {
+            console.warn("Search reverse geocoding failed:", error);
+
+            loc = buildLocation({
+                latitude,
+                longitude,
+                name: firstResult.name,
+                city: firstResult.name,
+                state: firstResult.admin1 || null,
+                country: firstResult.country || null
+            });
+        }
+
+        selectLocation(loc);
+        return loc;
     };
 
     const handleLocateMe = () => {
@@ -80,12 +186,13 @@ const App = () => {
             async ({ coords }) => {
                 try {
                     const loc = await reverseGeocode(coords.latitude, coords.longitude);
-                    setLocation(loc);
-                    engineRef.current?.setLocationMarker(Number(loc.lat), Number(loc.lon));
-                    setView("maps");
-                    setNotificationOpen(false);
+                    selectLocation(loc);
                 } catch (error) {
-                    window.alert(error instanceof Error ? error.message : "Unable to resolve your location.");
+                    window.alert(
+                        error instanceof Error
+                            ? error.message
+                            : "Unable to resolve your location."
+                    );
                 }
             },
             (error) => {
@@ -104,7 +211,7 @@ const App = () => {
         );
     };
 
-    const handleUserMessage = async (text) => {
+    const handleUserMessage = async (text, selectedDomain = domain) => {
         const pendingId = `pending-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
         setChatHistory((prev) => [
@@ -114,7 +221,7 @@ const App = () => {
         ]);
 
         try {
-            const reply = await window.sendMessage(text);
+            const reply = await window.sendMessage(text, selectedDomain);
 
             setChatHistory((prev) =>
                 prev.map((message) =>
@@ -175,6 +282,8 @@ const App = () => {
                     setActiveLayer={setActiveLayer}
                     location={location}
                     onLocateMe={handleLocateMe}
+                    onSearchLocation={handleSearchLocation}
+                    onCoordinateSelect={handleCoordinateSelect}
                     notificationOpen={notificationOpen}
                     setNotificationOpen={setNotificationOpen}
                     onGoToOverview={() => goTo("overview")}

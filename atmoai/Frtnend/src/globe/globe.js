@@ -10,6 +10,8 @@ class GlobeEngine {
         this.autoSpinSpeed = 0.0008;
         this.transitionSpeed = 0.045;
         this.markerPulseSpeed = 5;
+        this.focusTimer = null;
+        this.focusToken = 0;
         this.targetCamera = new THREE.Vector3(0, 50, 300);
         this.targetEarthPosition = new THREE.Vector3(55, 0, 0);
         this.targetEarthRotation = new THREE.Vector3(0, 0, 0);
@@ -250,13 +252,62 @@ class GlobeEngine {
 
     setInteractionEnabled(enabled) {
         this.interactionEnabled = Boolean(enabled);
+
+        if (!enabled) {
+            this.focusToken += 1;
+        }
+
         if (this.controls) {
             this.controls.enabled = this.interactionEnabled;
             this.controls.autoRotate = false;
         }
+
         if (this.renderer?.domElement) {
             this.renderer.domElement.style.pointerEvents = this.interactionEnabled ? 'auto' : 'none';
             this.renderer.domElement.style.cursor = this.interactionEnabled ? 'grab' : 'default';
+        }
+    }
+
+    focusLocation(lat, lon, resumeInteraction = true) {
+        const latitude = Number(lat);
+        const longitude = Number(lon);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+        const token = ++this.focusToken;
+        const latRadians = THREE.MathUtils.degToRad(latitude);
+        const lonRadians = THREE.MathUtils.degToRad(longitude);
+
+        this.interactionEnabled = false;
+        if (this.controls) {
+            this.controls.enabled = false;
+            this.controls.autoRotate = false;
+        }
+        if (this.renderer?.domElement) {
+            this.renderer.domElement.style.pointerEvents = 'none';
+            this.renderer.domElement.style.cursor = 'default';
+        }
+        this.setLocationMarker(latitude, longitude);
+
+        this.targetEarthRotation.set(
+            latRadians,
+            -lonRadians,
+            0
+        );
+
+        if (this.focusTimer) {
+            window.clearTimeout(this.focusTimer);
+        }
+
+        if (resumeInteraction && this.currentView === "maps") {
+            this.focusTimer = window.setTimeout(() => {
+                if (
+                    token === this.focusToken &&
+                    this.currentView === "maps"
+                ) {
+                    this.setInteractionEnabled(true);
+                }
+            }, 850);
         }
     }
 
@@ -295,6 +346,7 @@ class GlobeEngine {
         };
 
         const preset = presets[view] || presets.landing;
+        this.focusToken += 1;
         this.targetCamera.set(...preset.camera);
         this.targetEarthPosition.set(...preset.earth);
         this.targetEarthRotation.set(...preset.rotation);
@@ -394,7 +446,7 @@ class GlobeEngine {
     }
 
     animate() {
-        requestAnimationFrame(this.animate);
+        this.animationFrameId = requestAnimationFrame(this.animate);
         const time = this.clock.getElapsedTime();
 
         this.camera.position.lerp(this.targetCamera, this.transitionSpeed);
@@ -440,6 +492,11 @@ class GlobeEngine {
     }
 
     dispose() {
+        this.focusToken += 1;
+        if (this.focusTimer) {
+            window.clearTimeout(this.focusTimer);
+            this.focusTimer = null;
+        }
         cancelAnimationFrame(this.animationFrameId);
         this.renderer?.domElement?.removeEventListener('click', this.onCanvasClick);
         this.controls?.dispose?.();
