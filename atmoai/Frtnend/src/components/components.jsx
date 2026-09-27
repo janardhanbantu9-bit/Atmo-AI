@@ -1,302 +1,755 @@
- const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef } = React;
 
-        const IconMenu = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
-        const IconMic = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>;
-        const IconSend = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>;
-        const IconLayers = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>;
-        const IconAlertTriangle = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
-const IconThermometer = ({ className = "", ...props }) => (
-  <svg
-    className={className}
-    {...props}
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
-  </svg>
+const IconCloudSun = ({ size = 22, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        className={className} aria-hidden="true">
+        <path d="M12 2v2" />
+        <path d="M12 20v2" />
+        <path d="M4.93 4.93l1.41 1.41" />
+        <path d="M17.66 17.66l1.41 1.41" />
+        <path d="M2 12h2" />
+        <path d="M20 12h2" />
+        <path d="M6.34 17.66l-1.41 1.41" />
+        <path d="M19.07 4.93l-1.41 1.41" />
+        <path d="M17 18a5 5 0 0 0-10 0" />
+        <path d="M7 18h10" />
+    </svg>
 );
 
-const IconWind = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
-  </svg>
-);        const IconCloudRain = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="16" y1="13" x2="16" y2="21"></line><line x1="8" y1="13" x2="8" y2="21"></line><line x1="12" y1="15" x2="12" y2="23"></line><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>;
+const IconBell = ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+);
 
-        const Navigation = ({ view, setView, setActiveLayer }) => {
-            return (
-                <nav className={`w-full absolute top-0 left-0 z-50 transition-all duration-500 pointer-events-auto ${view === 'platform' ? 'glass-panel border-b border-white/10' : 'bg-transparent pt-6'}`}>
-                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                        <div 
-                            className="text-xl font-bold tracking-wider cursor-pointer flex items-center gap-2"
-                            onClick={() => { setView('landing'); setActiveLayer('none'); }}
+const IconX = ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+    </svg>
+);
+
+const IconMic = ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <rect x="9" y="2" width="6" height="12" rx="3" />
+        <path d="M19 10a7 7 0 0 1-14 0" />
+        <path d="M12 19v3" />
+        <path d="M8 22h8" />
+    </svg>
+);
+
+const IconSend = ({ size = 19 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="m22 2-7 20-4-9-9-4Z" />
+        <path d="M22 2 11 13" />
+    </svg>
+);
+
+const IconMap = ({ size = 19 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z" />
+        <path d="M9 3v15" />
+        <path d="M15 6v15" />
+    </svg>
+);
+
+const IconGlobe = ({ size = 19 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <circle cx="12" cy="12" r="9.5" />
+        <path d="M2.5 12h19" />
+        <path d="M12 2.5a14.5 14.5 0 0 1 0 19" />
+        <path d="M12 2.5a14.5 14.5 0 0 0 0 19" />
+    </svg>
+);
+
+const IconLayers = ({ size = 18 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="m12 2 9 5-9 5-9-5Z" />
+        <path d="m3 12 9 5 9-5" />
+        <path d="m3 17 9 5 9-5" />
+    </svg>
+);
+
+const IconThermometer = ({ size = 18 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="M14 14.76V4a2 2 0 0 0-4 0v10.76a4 4 0 1 0 4 0Z" />
+    </svg>
+);
+
+const IconWind = ({ size = 18 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="M3 8h11a3 3 0 1 0-3-3" />
+        <path d="M3 12h15a3 3 0 1 1-3 3" />
+        <path d="M3 16h8a3 3 0 1 0-3 3" />
+    </svg>
+);
+
+const IconCloudRain = ({ size = 18 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="M7 18h10a4.5 4.5 0 0 0 .5-8.97A6.5 6.5 0 0 0 5 10.5 4 4 0 0 0 7 18Z" />
+        <path d="M8 20v2" />
+        <path d="M12 19v3" />
+        <path d="M16 20v2" />
+    </svg>
+);
+
+const IconAlert = ({ size = 18 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <path d="m12 3 9 17H3Z" />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+    </svg>
+);
+
+const IconSearch = ({ size = 18 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+    </svg>
+);
+
+const IconLocate = ({ size = 17 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        aria-hidden="true">
+        <circle cx="12" cy="12" r="7" />
+        <circle cx="12" cy="12" r="2" />
+        <path d="M12 2v3" />
+        <path d="M12 19v3" />
+        <path d="M2 12h3" />
+        <path d="M19 12h3" />
+    </svg>
+);
+
+const IconChevron = ({ direction = "down", size = 14 }) => {
+    const path = direction === "up" ? "m6 9 6-6 6 6" : "m6 6 6 6 6-6";
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            aria-hidden="true">
+            <path d={path} />
+        </svg>
+    );
+};
+
+const NAV_ITEMS = [
+    { id: "landing", label: "HOME" },
+    { id: "ai", label: "AI" },
+    { id: "maps", label: "MAPS" },
+    { id: "overview", label: "OVERVIEW" }
+];
+
+const TYPEWRITER_PHRASES = [
+    "Is it going to rain in Hyderabad?",
+    "How's the weather in Delhi?",
+    "Will there be heavy rain tomorrow?",
+    "What's the temperature in Mumbai?",
+    "Is there a storm expected this week?",
+    "How humid will it be today?"
+];
+
+const useTypewriter = (phrases, typingSpeed = 48, pauseTime = 1800) => {
+    const [text, setText] = useState("");
+    const [index, setIndex] = useState(0);
+    const [deleting, setDeleting] = useState(false);
+
+    useEffect(() => {
+        const current = phrases[index] || "";
+        const delay = deleting ? Math.max(typingSpeed * 0.42, 16) : typingSpeed;
+
+        const timer = setTimeout(() => {
+            if (!deleting) {
+                const next = current.slice(0, text.length + 1);
+                setText(next);
+
+                if (next.length === current.length) {
+                    setTimeout(() => setDeleting(true), pauseTime);
+                }
+                return;
+            }
+
+            const next = current.slice(0, Math.max(text.length - 1, 0));
+            setText(next);
+
+            if (next.length === 0) {
+                setDeleting(false);
+                setIndex((value) => (value + 1) % phrases.length);
+            }
+        }, delay);
+
+        return () => clearTimeout(timer);
+    }, [phrases, index, text, deleting, typingSpeed, pauseTime]);
+
+    return text;
+};
+
+const Navigation = ({ view, setView }) => (
+    <nav className="atmo-nav">
+        <div className="atmo-nav-inner">
+            <button
+                className="brand-lockup"
+                onClick={() => setView("landing")}
+                aria-label="AtmoSphere Home"
+            >
+                <IconCloudSun size={24} />
+                <span className="brand-word">
+                    ATMO<span>SPHERE</span>
+                </span>
+            </button>
+
+            <div className="nav-links">
+                {NAV_ITEMS.map((item) => (
+                    <button
+                        key={item.id}
+                        className={`nav-link ${view === item.id ? "active" : ""}`}
+                        onClick={() => setView(item.id)}
+                    >
+                        {item.label}
+                    </button>
+                ))}
+            </div>
+
+            <div className="nav-spacer" />
+        </div>
+    </nav>
+);
+
+const NotificationBell = ({ open, setOpen, onGoToOverview }) => (
+    <div className="notification-anchor">
+        <button
+            className={`notification-button ${open ? "is-open" : ""}`}
+            onClick={() => setOpen((value) => !value)}
+            aria-label={open ? "Close notifications" : "Open notifications"}
+            aria-expanded={open}
+        >
+            {open ? <IconX /> : <IconBell />}
+            {!open && <span className="notification-dot" />}
+        </button>
+
+        {open && (
+            <div className="notification-panel glass-panel">
+                <div className="notification-panel-head">
+                    <div>
+                        <div className="eyebrow">Alerts</div>
+                        <h3>Notifications</h3>
+                    </div>
+                    <button className="icon-ghost" onClick={() => setOpen(false)} aria-label="Close">
+                        <IconX />
+                    </button>
+                </div>
+
+                <div className="notification-list">
+                    <button className="notification-card notification-card-action" onClick={onGoToOverview}>
+                        <div className="notification-card-meta">PREDICTION UPDATE</div>
+                        <div className="notification-card-title">Significant event analysis is ready.</div>
+                        <div className="notification-card-body">
+                            Open the same Overview page used for local historical data and predictions.
+                        </div>
+                        <div className="notification-card-cta">Open Overview →</div>
+                    </button>
+
+                    <div className="notification-card">
+                        <div className="notification-card-meta">SYSTEM</div>
+                        <div className="notification-card-title">AtmoSphere is online.</div>
+                        <div className="notification-card-body">
+                            Climate layers, globe animation, and AI services are ready.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
+);
+
+const LocateButton = ({ onLocateMe, compact = false }) => (
+    <button className={`locate-button ${compact ? "compact" : ""}`} onClick={onLocateMe}>
+        <IconLocate size={16} />
+        <span>Locate Me</span>
+    </button>
+);
+
+const LandingPage = ({ setView, onLocateMe, notificationOpen, setNotificationOpen }) => {
+    const featureCards = [
+        {
+            title: "Map Experience",
+            body: "Explore weather layers through a responsive 2D/3D spatial view.",
+            icon: <IconMap />
+        },
+        {
+            title: "Multilingual AI",
+            body: "Ask natural questions about weather and climate in the language you use.",
+            icon: <IconCloudSun />
+        },
+        {
+            title: "Voice Supported",
+            body: "Keep the conversation hands-free with voice-ready interaction points.",
+            icon: <IconMic />
+        },
+        {
+            title: "Accuracy & Context",
+            body: "Combine live conditions, historical context, and event signals in one place.",
+            icon: <IconAlert />
+        }
+    ];
+
+    return (
+        <div className="landing-page">
+            <section className="landing-hero">
+                <div className="landing-hero-copy">
+                    <div className="hero-kicker">Climate intelligence, made conversational.</div>
+                    <h1>
+                        WEATHER.<br />
+                        CLIMATE.<br />
+                        <span>INTELLIGENCE.</span>
+                    </h1>
+                    <p>
+                        Conversational intelligence for weather, climate, and real-world decisions.
+                        Understand what the forecast means, not just what it says.
+                    </p>
+                    <div className="hero-actions">
+                        <button className="primary-cta" onClick={() => setView("maps")}>
+                            Explore Platform →
+                        </button>
+                        <button className="secondary-cta" onClick={() => setView("ai")}>
+                            Ask the AI
+                        </button>
+                    </div>
+                </div>
+
+                <div className="landing-controls">
+                    <NotificationBell
+                        open={notificationOpen}
+                        setOpen={setNotificationOpen}
+                        onGoToOverview={() => setView("overview")}
+                    />
+                    <LocateButton onLocateMe={onLocateMe} />
+                </div>
+            </section>
+
+            <section className="landing-about">
+                <div className="section-heading">
+                    <div className="eyebrow">The platform</div>
+                    <h2>Understand the atmosphere.</h2>
+                    <p>
+                        A calmer interface around a serious geospatial engine, with the Earth
+                        remaining the visual focus rather than getting buried under controls.
+                    </p>
+                </div>
+
+                <div className="feature-grid">
+                    {featureCards.map((card) => (
+                        <article className="feature-card glass-panel" key={card.title}>
+                            <div className="feature-icon">{card.icon}</div>
+                            <div>
+                                <h3>{card.title}</h3>
+                                <p>{card.body}</p>
+                            </div>
+                        </article>
+                    ))}
+                </div>
+
+                <div className="about-footer">
+                    <div>
+                        <div className="eyebrow">About us</div>
+                        <h3>Climate data without the dashboard clutter.</h3>
+                    </div>
+                    <button className="secondary-cta" onClick={() => setView("overview")}>
+                        See the Overview →
+                    </button>
+                </div>
+            </section>
+        </div>
+    );
+};
+
+const ChatPage = ({ chatHistory, onSendMessage, domain, setDomain, notificationOpen, setNotificationOpen, onGoToOverview }) => {
+    const [input, setInput] = useState("");
+    const chatEndRef = useRef(null);
+    const placeholder = useTypewriter(TYPEWRITER_PHRASES);
+
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [chatHistory]);
+
+    const submit = (event) => {
+        event.preventDefault();
+        const value = input.trim();
+        if (!value) return;
+        onSendMessage(value);
+        setInput("");
+    };
+
+    return (
+        <div className="app-page chat-page pointer-events-layer">
+            <div className="page-top-controls">
+                <NotificationBell
+                    open={notificationOpen}
+                    setOpen={setNotificationOpen}
+                    onGoToOverview={onGoToOverview}
+                />
+            </div>
+
+            <div className="chat-shell">
+                <div className="chat-heading">
+                    <div className="eyebrow">AI</div>
+                    <h2>Talk to the atmosphere.</h2>
+                    <p>Ask about weather, climate, risks, forecasts, and historical context.</p>
+                    <label className="context-select">
+                        <span>Context</span>
+                        <select value={domain} onChange={(e) => setDomain(e.target.value)}>
+                            <option value="marine">Marine</option>
+                            <option value="agriculture">Agriculture</option>
+                            <option value="aviation">Aviation</option>
+                            <option value="disaster">Disaster</option>
+                            <option value="research">Research</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div className="chat-stream">
+                    {chatHistory.map((msg, index) => (
+                        <div
+                            key={`${msg.role}-${index}-${msg.pendingId || ""}`}
+                            className={`chat-row ${msg.role === "user" ? "user" : "assistant"}`}
                         >
-                            <div className="w-6 h-6 rounded-full bg-brand-400 opacity-80 blur-[2px]"></div>
-                            <span>ATMO<span className="text-brand-400 font-light">SPHERE</span></span>
-                        </div>
-                        
-                        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-                            <button onClick={() => { setView('platform'); setActiveLayer('temperature'); }} className="hover:text-white transition-colors">Forecast</button>
-                            <button onClick={() => { setView('platform'); setActiveLayer('anomaly'); }} className="hover:text-white transition-colors">Climate</button>
-                            <button onClick={() => { setView('platform'); setActiveLayer('none'); }} className="hover:text-white transition-colors">Decision Support</button>
-                            <button onClick={() => { setView('platform'); setActiveLayer('precipitation'); }} className="flex items-center gap-1 hover:text-alert-warning transition-colors">
-                                <IconAlertTriangle /> Alerts
-                            </button>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                            {view === 'landing' ? (
-                                <button 
-                                    onClick={() => setView('platform')}
-                                    className="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-sm font-semibold transition-all"
-                                >
-                                    Explore Platform
-                                </button>
-                            ) : (
-                                <div className="w-8 h-8 rounded-full bg-brand-900 border border-brand-500 flex items-center justify-center text-xs font-bold shadow-lg shadow-brand-500/20 cursor-pointer hover:bg-brand-500 transition-colors">
-                                    USR
+                            {msg.role === "ai" && (
+                                <div className="assistant-mark">
+                                    <IconCloudSun size={18} />
                                 </div>
                             )}
-                        </div>
-                    </div>
-                </nav>
-            );
-        };
-
-        const LandingPage = ({ setView }) => {
-            const nextSectionRef = useRef(null);
-
-            const handleScrollDown = () => {
-                nextSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-            };
-
-            return (
-                <div className="w-full h-full">
-                    {/* Hero Section */}
-                    <div className="w-full h-screen flex flex-col justify-center px-10 md:px-24 relative pointer-events-none">
-                        <div className="max-w-3xl pointer-events-auto mt-20">
-                            <h1 className="text-6xl md:text-8xl font-bold tracking-tighter leading-none mb-6 text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400">
-                                WEATHER.<br/>
-                                CLIMATE.<br/>
-                                <span className="text-brand-400">INTELLIGENCE.</span>
-                            </h1>
-                            <p className="text-xl md:text-2xl text-slate-300 mb-10 max-w-2xl font-light">
-                                Conversational intelligence for weather, climate, and real-world decisions.
-                            </p>
-                            <div className="flex flex-wrap gap-4">
-                                <button 
-                                    onClick={() => setView('platform')}
-                                    className="px-8 py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-semibold transition-colors shadow-[0_0_20px_rgba(14,165,233,0.4)]"
-                                >
-                                    Enter Platform
-                                </button>
-                                <button 
-                                    className="px-8 py-4 rounded-full glass-button font-medium flex items-center gap-2"
-                                    onClick={handleScrollDown}
-                                >
-                                    See How It Works ↓
-                                </button>
+                            <div className={`chat-bubble ${msg.role === "user" ? "user-bubble" : "assistant-bubble"}`}>
+                                {msg.text}
                             </div>
                         </div>
+                    ))}
+                    <div ref={chatEndRef} />
+                </div>
+
+                <form className="chat-composer glass-panel" onSubmit={submit}>
+                    <input
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder={input ? "" : placeholder}
+                        aria-label="Ask AtmoSphere"
+                    />
+                    <button type="button" className="composer-icon" aria-label="Voice input">
+                        <IconMic />
+                    </button>
+                    <button
+                        type="submit"
+                        className={`composer-send ${input.trim() ? "enabled" : ""}`}
+                        aria-label="Send message"
+                    >
+                        <IconSend />
+                    </button>
+                </form>
+                <div className="chat-disclaimer">AtmoSphere can make mistakes. Verify critical conditions before acting.</div>
+            </div>
+        </div>
+    );
+};
+
+const MapsPage = ({
+    activeLayer,
+    setActiveLayer,
+    location,
+    onLocateMe,
+    notificationOpen,
+    setNotificationOpen,
+    onGoToOverview,
+    globeEngine
+}) => {
+    const [mapMode, setMapMode] = useState("3D");
+    const [timeline, setTimeline] = useState(0);
+    const [selectedMetric, setSelectedMetric] = useState(activeLayer === "none" ? "temperature" : activeLayer);
+    const [searchValue, setSearchValue] = useState("");
+
+    useEffect(() => {
+        setSelectedMetric(activeLayer === "none" ? "temperature" : activeLayer);
+    }, [activeLayer]);
+
+    const layers = [
+        { id: "none", label: "Base Earth", icon: null },
+        { id: "temperature", label: "Temperature", icon: <IconThermometer /> },
+        { id: "precipitation", label: "Precipitation", icon: <IconCloudRain /> },
+        { id: "wind", label: "Wind / Pressure", icon: <IconWind /> },
+        { id: "anomaly", label: "Climate Anomaly", icon: <IconAlert /> }
+    ];
+
+    const setMetric = (id) => {
+        setSelectedMetric(id);
+        setActiveLayer(id);
+    };
+
+    const shiftTimeline = (delta) => {
+        setTimeline((value) => Math.max(-100, Math.min(100, value + delta)));
+    };
+
+    return (
+        <div className="app-page maps-page pointer-events-layer">
+            <div className="page-top-controls">
+                <NotificationBell
+                    open={notificationOpen}
+                    setOpen={setNotificationOpen}
+                    onGoToOverview={onGoToOverview}
+                />
+            </div>
+
+            {mapMode === "2D" && (
+                <div className="map-2d-surface" aria-hidden="true">
+                    <div className="map-2d-grid" />
+                    <div className="map-2d-label">2D MAP VIEW</div>
+                </div>
+            )}
+
+            <div className="maps-left-column">
+                <div className="search-shell glass-panel">
+                    <IconSearch />
+                    <input
+                        value={searchValue}
+                        onChange={(e) => setSearchValue(e.target.value)}
+                        placeholder="Find location"
+                        aria-label="Find location"
+                    />
+                    <button className="search-small" onClick={onLocateMe} aria-label="Use current location">
+                        <IconLocate size={15} />
+                    </button>
+                </div>
+
+                <div className="map-summary glass-panel">
+                    <div className="eyebrow">Selected location</div>
+                    <h3>{location?.name || "Global view"}</h3>
+                    <div className="summary-stats">
+                        <div><span>Temp</span><strong>29°C</strong></div>
+                        <div><span>Wind</span><strong>14 km/h</strong></div>
                     </div>
-                    
-                    {/* Information Section */}
-                    <div ref={nextSectionRef} className="w-full min-h-screen flex items-center px-10 md:px-24 pointer-events-none relative z-10 bg-gradient-to-b from-transparent to-brand-space pt-20">
-                        <div className="max-w-md pointer-events-auto glass-panel p-8 rounded-2xl shadow-2xl border border-white/10">
-                            <h2 className="text-3xl font-bold mb-4">Understand the Atmosphere</h2>
-                            <p className="text-slate-300 mb-6">Our geospatial engine processes petabytes of climate data into an interactive, real-time representation of Earth's systems.</p>
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3"><IconThermometer className="text-brand-400"/> Temperature Fields</div>
-                                <div className="flex items-center gap-3"><IconWind className="text-brand-400"/> Global Wind Vectors</div>
-                                <div className="flex items-center gap-3"><IconCloudRain className="text-brand-400"/> Precipitation Forecasts</div>
-                            </div>
-                            <button 
-                                onClick={() => setView('platform')}
-                                className="mt-8 w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 transition-all font-medium"
-                            >
-                                Open Visualization Layer
-                            </button>
-                        </div>
+                    <div className="summary-note">Attributes update when a region is selected on the globe.</div>
+                </div>
+
+                <LocateButton onLocateMe={onLocateMe} compact />
+            </div>
+
+            <div className="maps-right-column">
+                <div className="location-panel glass-panel">
+                    <div className="eyebrow">Address</div>
+                    <h3>{location?.displayName || location?.name || "Select a region"}</h3>
+                    <div className="coordinates">
+                        <span>LAT {location?.lat || "--"}</span>
+                        <span>LON {location?.lon || "--"}</span>
                     </div>
                 </div>
-            );
-        };
 
-        const PlatformUI = ({ 
-            activeLayer, 
-            setActiveLayer, 
-            location, 
-            chatHistory, 
-            onSendMessage,
-            domain,
-            setDomain
-        }) => {
-            const [inputMsg, setInputMsg] = useState("");
-            const chatEndRef = useRef(null);
+                <div className="overview-mini glass-panel">
+                    <div className="eyebrow">Overview of selected location</div>
+                    <p>
+                        {location
+                            ? `${location.name} is selected. Explore atmospheric layers and time progression below.`
+                            : "Click the Earth to select a region and populate its local context."}
+                    </p>
+                </div>
 
-            useEffect(() => {
-                chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, [chatHistory]);
+                <button
+                    className="secondary-cta map-mode-toggle"
+                    onClick={() => setMapMode((value) => value === "3D" ? "2D" : "3D")}
+                >
+                    {mapMode === "3D" ? <IconMap /> : <IconGlobe />}
+                    <span>{mapMode === "3D" ? "Go 2D" : "Go 3D"}</span>
+                </button>
+            </div>
 
-            const handleSend = (e) => {
-                e.preventDefault();
-                if(!inputMsg.trim()) return;
-                onSendMessage(inputMsg);
-                setInputMsg("");
-            };
+            <div className="maps-bottom-controls">
+                <div className="layer-tabs glass-panel">
+                    <div className="layer-title"><IconLayers /> Layers</div>
+                    {layers.map((layer) => (
+                        <button
+                            key={layer.id}
+                            className={`layer-tab ${selectedMetric === layer.id ? "active" : ""}`}
+                            onClick={() => setMetric(layer.id)}
+                        >
+                            {layer.icon}
+                            <span>{layer.label}</span>
+                        </button>
+                    ))}
+                </div>
 
-            const layers = [
-                { id: 'none', label: 'Base Earth', icon: null },
-                { id: 'temperature', label: 'Temperature', icon: <IconThermometer/> },
-                { id: 'precipitation', label: 'Precipitation', icon: <IconCloudRain/> },
-                { id: 'wind', label: 'Wind / Pressure', icon: <IconWind/> },
-                { id: 'anomaly', label: 'Climate Anomaly', icon: <IconAlertTriangle/> },
-            ];
-
-            const domains = ['Agriculture', 'Aviation', 'Marine', 'Disaster', 'Research'];
-
-            return (
-                <div className="w-full h-full pt-16 flex p-4 gap-4 pointer-events-none">
-                    
-                    {/* Left Sidebar - AI Chat */}
-                    <div className="w-80 h-full flex flex-col pointer-events-auto">
-                        <div className="glass-panel rounded-2xl flex-1 flex flex-col overflow-hidden shadow-2xl border border-white/10 bg-slate-900/80 backdrop-blur-xl">
-                            {/* Domain Selector */}
-                            <div className="p-4 border-b border-white/10 bg-black/20">
-                                <div className="text-xs uppercase tracking-wider text-slate-400 mb-2">Context Domain</div>
-                                <select 
-                                    className="w-full bg-slate-800/80 border border-slate-700 text-white text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block p-2 outline-none"
-                                    value={domain}
-                                    onChange={(e) => setDomain(e.target.value)}
-                                >
-                                    {domains.map(d => <option key={d} value={d.toLowerCase()}>{d}</option>)}
-                                </select>
-                            </div>
-
-                            {/* Chat History */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 panel-scroll">
-                                {chatHistory.map((msg, i) => (
-                                    <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                        <div className={`max-w-[90%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                                            msg.role === 'user' 
-                                            ? 'bg-brand-500 text-white rounded-tr-sm' 
-                                            : 'bg-slate-800/90 text-slate-200 rounded-tl-sm border border-slate-700'
-                                        }`}>
-                                            {msg.text}
-                                        </div>
-                                        {/* Rich Response handling for AI */}
-                                        {msg.role === 'ai' && msg.data && (
-                                            <div className="mt-2 w-full bg-slate-800/60 rounded-xl p-3 border-l-2 border-l-brand-400 text-xs shadow-inner">
-                                                <div className="font-bold mb-1 text-white">{msg.data.title}</div>
-                                                <div className="text-slate-300 whitespace-pre-line">{msg.data.content}</div>
-                                                {msg.data.confidence && (
-                                                    <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-slate-400 text-[10px] uppercase">
-                                                        <span>Conf: {msg.data.confidence}</span>
-                                                        <span>Source: {msg.data.source}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                                <div ref={chatEndRef} />
-                            </div>
-
-                            {/* Input form */}
-                            <div className="p-3 border-t border-white/10 bg-black/20">
-                                <form onSubmit={handleSend} className="relative flex items-center">
-                                    <input 
-                                        type="text" 
-                                        value={inputMsg}
-                                        onChange={(e) => setInputMsg(e.target.value)}
-                                        placeholder="Ask about risk, climate..."
-                                        className="w-full bg-slate-800 border border-slate-600 text-sm rounded-full pl-4 pr-20 py-3 focus:outline-none focus:border-brand-400 text-white placeholder-slate-400 shadow-inner"
-                                    />
-                                    <div className="absolute right-2 flex gap-1">
-                                        <button type="button" className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 transition">
-                                            <IconMic />
-                                        </button>
-                                        <button type="submit" className="p-2 text-brand-400 hover:text-brand-300 rounded-full hover:bg-slate-700 transition">
-                                            <IconSend />
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+                <div className="timeline-panel glass-panel">
+                    <div className="timeline-header">
+                        <span>HISTORICAL</span>
+                        <strong>LIVE</strong>
+                        <span>FORECAST</span>
                     </div>
-
-                    {/* Right Side - Floating Controls */}
-                    <div className="flex-1 flex flex-col justify-between items-end pointer-events-none pb-4">
-                        
-                        {/* Top Right: Location Metadata */}
-                        {location && (
-                            <div className="glass-panel p-4 rounded-2xl w-64 pointer-events-auto border-t-2 border-t-brand-400 shadow-xl bg-slate-900/80 backdrop-blur-md">
-                                <div className="text-xs text-slate-400 uppercase tracking-widest mb-1">Target Region</div>
-                                <div className="font-bold text-lg">{location.name}</div>
-                                <div className="tech-text text-xs text-brand-400 mt-2 bg-black/30 p-2 rounded-lg">
-                                    LAT: {location.lat}°<br/>LON: {location.lon}°
-                                </div>
-                            </div>
-                        )}
-                        {!location && (
-                            <div className="glass-panel px-4 py-2 rounded-full pointer-events-auto shadow-md border border-white/10 text-xs text-slate-400">
-                                Click Earth to select region
-                            </div>
-                        )}
-
-                        {/* Bottom Right: Layer Controls & Timeline */}
-                        <div className="w-full max-w-2xl flex flex-col gap-4 pointer-events-auto">
-                            
-                            {/* Layer Toggles */}
-                            <div className="glass-panel p-2 rounded-2xl flex items-center justify-around overflow-x-auto self-end w-full md:w-auto bg-slate-900/80">
-                                <div className="px-3 border-r border-white/10 flex items-center gap-2 text-slate-400">
-                                    <IconLayers /> <span className="text-xs uppercase tracking-wider hidden md:inline">Layers</span>
-                                </div>
-                                {layers.map(layer => (
-                                    <button 
-                                        key={layer.id}
-                                        onClick={() => setActiveLayer(layer.id)}
-                                        className={`px-4 py-2 text-sm font-medium rounded-xl flex items-center gap-2 transition-all mx-1 whitespace-nowrap
-                                            ${activeLayer === layer.id ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:bg-white/10'}
-                                        `}
-                                    >
-                                        {layer.icon && <span className="w-4 h-4">{layer.icon}</span>}
-                                        {layer.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Timeline Control */}
-                            <div className="glass-panel p-4 rounded-2xl w-full flex flex-col gap-3 bg-slate-900/80">
-                                <div className="flex justify-between text-xs tech-text text-slate-400">
-                                    <span>HISTORICAL</span>
-                                    <span className="text-white bg-brand-500/20 px-2 rounded">LIVE</span>
-                                    <span>FORECAST</span>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min="-100" max="100" defaultValue="0"
-                                    className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-400"
-                                />
-                                <div className="flex justify-between text-[10px] text-slate-500 uppercase">
-                                    <span>-30 Days</span>
-                                    <span>Now</span>
-                                    <span>+14 Days</span>
-                                </div>
-                            </div>
-                        </div>
+                    <input
+                        type="range"
+                        min="-100"
+                        max="100"
+                        value={timeline}
+                        onChange={(e) => setTimeline(Number(e.target.value))}
+                    />
+                    <div className="timeline-actions">
+                        <button onClick={() => shiftTimeline(-12)}>−12h</button>
+                        <button onClick={() => shiftTimeline(-1)}>−1h</button>
+                        <span>{timeline < 0 ? `${Math.abs(timeline)}h ago` : timeline > 0 ? `+${timeline}h` : "Now"}</span>
+                        <button onClick={() => shiftTimeline(1)}>+1h</button>
+                        <button onClick={() => shiftTimeline(12)}>+12h</button>
+                    </div>
+                    <div className="timeline-footer">
+                        <span>24 hours</span>
+                        <span>Days (+24 hours)</span>
+                        <span>Selected: {selectedMetric === "none" ? "Base Earth" : selectedMetric}</span>
                     </div>
                 </div>
-            );
-        };
-        
+            </div>
+        </div>
+    );
+};
+
+const OverviewPage = ({
+    location,
+    notificationOpen,
+    setNotificationOpen,
+    onGoToOverview
+}) => {
+    const [metric, setMetric] = useState("temperature");
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
+    const [rangeLabel, setRangeLabel] = useState("1 week");
+
+    const metrics = [
+        { id: "temperature", label: "Temperature" },
+        { id: "precipitation", label: "Precipitation" },
+        { id: "wind", label: "Wind" }
+    ];
+
+    const chartPoints = {
+        temperature: "0,72 60,61 120,66 180,42 240,50 300,36 360,40 420,24 480,32 540,20",
+        precipitation: "0,66 60,58 120,72 180,63 240,40 300,60 360,52 420,30 480,48 540,34",
+        wind: "0,49 60,39 120,50 180,35 240,48 300,28 360,44 420,32 480,40 540,26"
+    };
+
+    useEffect(() => {
+        if (fromDate && toDate) {
+            setRangeLabel(`${fromDate} → ${toDate}`);
+        } else {
+            setRangeLabel("1 week");
+        }
+    }, [fromDate, toDate]);
+
+    return (
+        <div className="app-page overview-page pointer-events-layer overview-scroll">
+            <div className="page-top-controls">
+                <NotificationBell
+                    open={notificationOpen}
+                    setOpen={setNotificationOpen}
+                    onGoToOverview={onGoToOverview}
+                />
+            </div>
+
+            <div className="overview-content">
+                <div className="overview-header">
+                    <div>
+                        <div className="eyebrow">Historical / Local Overview</div>
+                        <h2>{location?.name || "Location overview"}</h2>
+                        <p>Historical weather context and significant-event predictions.</p>
+                    </div>
+
+                    <div className="date-range glass-panel">
+                        <span className="eyebrow">Duration</span>
+                        <strong>{rangeLabel}</strong>
+                    </div>
+                </div>
+
+                <div className="overview-controls glass-panel">
+                    <label>
+                        <span>Date 1</span>
+                        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+                    </label>
+                    <label>
+                        <span>Date 2</span>
+                        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+                    </label>
+                    <button className="secondary-cta" onClick={() => {
+                        setFromDate("");
+                        setToDate("");
+                    }}>
+                        Reset to 1 week
+                    </button>
+                </div>
+
+                <div className="metric-tabs glass-panel">
+                    {metrics.map((item) => (
+                        <button
+                            key={item.id}
+                            className={`metric-tab ${metric === item.id ? "active" : ""}`}
+                            onClick={() => setMetric(item.id)}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="overview-chart-card glass-panel">
+                    <div className="overview-chart-head">
+                        <div>
+                            <div className="eyebrow">Historical trend</div>
+                            <h3>{metrics.find((item) => item.id === metric)?.label}</h3>
+                        </div>
+                        <span className="chart-context">{rangeLabel}</span>
+                    </div>
+
+                    <svg className="overview-chart" viewBox="0 0 540 110" preserveAspectRatio="none" role="img" aria-label="Historical trend chart">
+                        <defs>
+                            <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#39b9ff" stopOpacity="0.35" />
+                                <stop offset="100%" stopColor="#39b9ff" stopOpacity="0" />
+                            </linearGradient>
+                        </defs>
+                        <polyline
+                            fill="none"
+                            stroke="#39b9ff"
+                            strokeWidth="2.5"
+                            points={chartPoints[metric]}
+                        />
+                    </svg>
+                </div>
+
+                <section className="predictions-section">
+                    <div className="section-heading compact">
+                        <div className="eyebrow">Predictions</div>
+                        <h3>Significant events</h3>
+                    </div>
+
+                    <div className="prediction-empty glass-panel">
+                        <IconAlert size={18} />
+                        <span>No significant events predicted.</span>
+                    </div>
+                </section>
+            </div>
+        </div>
+    );
+};
